@@ -10,7 +10,7 @@ defineProps<{
 const sectionForm = useForm({ section_name: '', year_level: '', school_year: '2026-2027' });
 const addSection = () => sectionForm.post('/school/setup/sections', { onSuccess: () => sectionForm.reset() });
 
-const teacherForm = useForm({ employee_number: '', first_name: '', last_name: '', email: '' });
+const teacherForm = useForm({ first_name: '', last_name: '', email: '' });
 const addTeacher = () => teacherForm.post('/school/setup/teachers', { onSuccess: () => teacherForm.reset() });
 </script>
 
@@ -46,7 +46,6 @@ const addTeacher = () => teacherForm.post('/school/setup/teachers', { onSuccess:
                 <v-card class="mb-4">
                     <v-card-title>Add teacher (a temporary password is generated)</v-card-title>
                     <v-card-text>
-                        <v-text-field v-model="teacherForm.employee_number" label="Employee no." :error-messages="teacherForm.errors.employee_number" />
                         <v-text-field v-model="teacherForm.first_name" label="First name" :error-messages="teacherForm.errors.first_name" />
                         <v-text-field v-model="teacherForm.last_name" label="Last name" :error-messages="teacherForm.errors.last_name" />
                         <v-text-field v-model="teacherForm.email" label="Email (login)" :error-messages="teacherForm.errors.email" />

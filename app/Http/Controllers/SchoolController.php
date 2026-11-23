@@ -11,6 +11,7 @@ use App\Models\Section;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
+use App\Support\NumberGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,6 @@ class SchoolController extends Controller
     public function storeStudent(Request $request)
 {
     $data = $request->validate([
-        'student_number' => 'required|string|max:50|unique:students,student_number',
         'first_name' => 'required|string|max:100',
         'last_name' => 'required|string|max:100',
         'gender' => 'nullable|in:Male,Female,Other',
@@ -69,7 +69,7 @@ class SchoolController extends Controller
         }
 
         Student::create([
-            'student_number' => $data['student_number'],
+            'student_number' => NumberGenerator::student(),
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
             'gender' => $data['gender'] ?? null,

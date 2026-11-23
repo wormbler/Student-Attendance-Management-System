@@ -14,7 +14,6 @@ const alertError = computed(() => errors.value.delete || errors.value.login);
 const isAdmin = computed(() => (page.props as any).auth?.user?.role === 'admin');
 
 const form = useForm({
-    student_number: '',
     first_name: '',
     last_name: '',
     gender: 'Male',
@@ -46,16 +45,13 @@ const createLogin = (id: number) => {
             <v-card-title>Add student</v-card-title>
             <v-card-text>
                 <v-row>
-                    <v-col cols="12" md="2">
-                        <v-text-field v-model="form.student_number" label="Student no." :error-messages="form.errors.student_number" />
-                    </v-col>
-                    <v-col cols="12" md="2">
+                    <v-col cols="12" md="3">
                         <v-text-field v-model="form.first_name" label="First name" :error-messages="form.errors.first_name" />
                     </v-col>
-                    <v-col cols="12" md="2">
+                    <v-col cols="12" md="3">
                         <v-text-field v-model="form.last_name" label="Last name" :error-messages="form.errors.last_name" />
                     </v-col>
-                    <v-col cols="12" md="2">
+                    <v-col cols="12" md="3">
                         <v-select v-model="form.gender" :items="['Male', 'Female', 'Other']" label="Gender" />
                     </v-col>
                     <v-col cols="12" md="4">

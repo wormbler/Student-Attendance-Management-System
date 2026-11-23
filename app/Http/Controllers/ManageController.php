@@ -7,6 +7,7 @@ use App\Models\Section;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Support\NumberGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -73,7 +74,6 @@ class ManageController extends Controller
     public function storeTeacher(Request $request)
 {
     $data = $request->validate([
-        'employee_number' => 'required|string|max:50|unique:teachers,employee_number',
         'first_name' => 'required|string|max:100',
         'last_name' => 'required|string|max:100',
         'email' => 'required|email|max:150|unique:users,email',
@@ -91,7 +91,7 @@ class ManageController extends Controller
         ]);
 
         Teacher::create([
-            'employee_number' => $data['employee_number'],
+            'employee_number' => NumberGenerator::teacher(),
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
             'user_id' => $user->id,
