@@ -194,9 +194,10 @@ public function myAttendance(Request $request)
 $schedules = ClassSchedule::with(['subject', 'section'])
     ->when($user->role === 'teacher', fn ($q) => $q->where('teacher_id', $user->teacher?->id ?? 0))
     ->get()->map(fn ($s) => [
-            'id' => $s->id,
-            'label' => "{$s->section->section_name} | {$s->subject->subject_name} | {$s->day} " . substr($s->start_time, 0, 5),
-        ]);
+    'id' => $s->id,
+    'day' => $s->day,
+    'label' => "{$s->section->section_name} | {$s->subject->subject_name} | {$s->day} " . substr($s->start_time, 0, 5),
+]);
 
         $date = $request->query('date', now()->toDateString());
         $scheduleId = $request->query('schedule_id');
@@ -217,7 +218,7 @@ $schedules = ClassSchedule::with(['subject', 'section'])
                     'id' => $st->id,
                     'student_number' => $st->student_number,
                     'name' => "{$st->last_name}, {$st->first_name}",
-                    'status' => $existing[$st->id] ?? 'Present',
+                    'status' => $existing[$st->id] ?? null,
                 ]);
         }
 
@@ -241,6 +242,18 @@ $schedules = ClassSchedule::with(['subject', 'section'])
 
     $user = $request->user();
     $schedule = ClassSchedule::findOrFail($data['schedule_id']);
+
+    // The date must fall on the schedule's day
+    if (Carbon::parse($data['date'])->englishDayOfWeek !== $schedule->day) {
+    return back()->withErrors([
+        'attendance' => "This class is scheduled on {$schedule->day}. {$data['date']} is a ".Carbon::parse($data['date'])->englishDayOfWeek.'.',
+    ]);
+    }
+
+    // No attendance for future dates
+    if (Carbon::parse($data['date'])->isFuture()) {
+    return back()->withErrors(['attendance' => 'You cannot take attendance for a future date.']);
+    }
 
     // A teacher may only record attendance for their own classes
     if ($user->role === 'teacher' && $schedule->teacher_id !== $user->teacher?->id) {
@@ -329,6 +342,7 @@ $schedules = ClassSchedule::with(['subject', 'section'])
     public function auditLog()
 {
     $logs = AttendanceLog::with(['user:id,name', 'attendance.student', 'attendance.session.schedule.subject'])
+        ->where('action', 'updated')
         ->latest()->limit(300)->get()
         ->map(fn ($l) => [
             'id' => $l->id,

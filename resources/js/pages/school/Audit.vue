@@ -17,7 +17,7 @@ const color = (s: string) =>
 <template>
     <Head title="Audit Log" />
     <SchoolLayout>
-        <h1 class="text-h5 mb-4">Attendance Audit Log (latest 300)</h1>
+        <td colspan="8" class="text-center text-medium-emphasis pa-6">No edits to attendance yet.</td>
         <v-card>
             <v-table density="comfortable">
                 <thead>
