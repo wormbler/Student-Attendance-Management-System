@@ -4,6 +4,7 @@ use App\Http\Controllers\ManageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SchoolController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ChangePasswordController;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Http\Request;
@@ -15,6 +16,11 @@ Route::inertia('/', 'Welcome')->name('home');
 Route::middleware(['auth', EnsureUserIsActive::class])->get('dashboard', function (Request $request) {
     return redirect($request->user()->role === 'student' ? '/my-attendance' : '/school');
 })->name('dashboard');
+
+Route::middleware(['auth', EnsureUserIsActive::class])->group(function () {
+    Route::get('change-password', [ChangePasswordController::class, 'show']);
+    Route::put('change-password', [ChangePasswordController::class, 'update']);
+});
 
 // Students
 Route::middleware(['auth', EnsureUserIsActive::class, EnsureRole::class.':student'])->group(function () {

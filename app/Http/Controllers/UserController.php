@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -48,10 +49,18 @@ class UserController extends Controller
     }
 
     public function resetPassword(Request $request, User $user)
-    {
-        $data = $request->validate(['password' => 'required|string|min:8']);
-        $user->update(['password' => $data['password']]); // hashed by the User cast
+{
+    $password = Str::password(10, symbols: false);
 
-        return back();
-    }
+    $user->update([
+        'password' => $password,
+        'must_change_password' => true,
+    ]);
+
+    return back()->with('generated', [
+        'name' => $user->name,
+        'email' => $user->email,
+        'password' => $password,
+    ]);
+}
 }

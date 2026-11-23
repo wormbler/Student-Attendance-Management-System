@@ -23,6 +23,10 @@ class EnsureUserIsActive
             ]);
         }
 
+        if ($user && $user->must_change_password && ! $request->is('change-password')) {
+            return redirect('/change-password');
+        }
+
         return $next($request);
     }
 }

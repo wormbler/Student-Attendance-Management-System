@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import SchoolLayout from '@/layouts/SchoolLayout.vue';
 
@@ -22,24 +22,11 @@ const changeRole = (id: number, role: string) =>
 
 const toggle = (id: number) => router.put(`/school/users/${id}/status`, {}, { preserveScroll: true });
 
-const dialog = ref(false);
-const targetId = ref<number | null>(null);
-const targetName = ref('');
-const form = useForm({ password: '' });
-
-const openReset = (u: { id: number; name: string }) => {
-    targetId.value = u.id;
-    targetName.value = u.name;
-    form.reset();
-    form.clearErrors();
-    dialog.value = true;
+const resetPassword = (u: { id: number; name: string }) => {
+    if (confirm(`Generate a new temporary password for ${u.name}?`)) {
+        router.put(`/school/users/${u.id}/password`, {}, { preserveScroll: true });
+    }
 };
-
-const saveReset = () =>
-    form.put(`/school/users/${targetId.value}/password`, {
-        preserveScroll: true,
-        onSuccess: () => (dialog.value = false),
-    });
 </script>
 
 <template>
@@ -82,24 +69,11 @@ const saveReset = () =>
                             />
                         </td>
                         <td class="text-right">
-                            <v-btn icon="mdi-lock-reset" size="small" variant="text" title="Reset password" @click="openReset(u)" />
+                            <v-btn icon="mdi-lock-reset" size="small" variant="text" title="Generate temporary password" @click="resetPassword(u)" />
                         </td>
                     </tr>
                 </tbody>
             </v-table>
         </v-card>
-
-        <v-dialog v-model="dialog" max-width="420">
-            <v-card :title="`Reset password: ${targetName}`">
-                <v-card-text>
-                    <v-text-field v-model="form.password" type="password" label="New password (min 8)" :error-messages="form.errors.password" />
-                </v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn @click="dialog = false">Cancel</v-btn>
-                    <v-btn color="primary" :loading="form.processing" @click="saveReset">Save</v-btn>
-                </v-card-actions>
-            </v-card>
-        </v-dialog>
     </SchoolLayout>
 </template>

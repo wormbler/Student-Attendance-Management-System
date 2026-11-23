@@ -8,6 +8,7 @@ use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -70,33 +71,39 @@ class ManageController extends Controller
     }
 
     public function storeTeacher(Request $request)
-    {
-        $data = $request->validate([
-            'employee_number' => 'required|string|max:50|unique:teachers,employee_number',
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
-            'email' => 'required|email|max:150|unique:users,email',
-            'password' => 'required|string|min:8',
+{
+    $data = $request->validate([
+        'employee_number' => 'required|string|max:50|unique:teachers,employee_number',
+        'first_name' => 'required|string|max:100',
+        'last_name' => 'required|string|max:100',
+        'email' => 'required|email|max:150|unique:users,email',
+    ]);
+
+    $password = Str::password(10, symbols: false);
+
+    DB::transaction(function () use ($data, $password) {
+        $user = User::create([
+            'name' => "{$data['first_name']} {$data['last_name']}",
+            'email' => $data['email'],
+            'password' => $password,
+            'role' => 'teacher',
+            'must_change_password' => true,
         ]);
 
-        DB::transaction(function () use ($data) {
-            $user = User::create([
-                'name' => "{$data['first_name']} {$data['last_name']}",
-                'email' => $data['email'],
-                'password' => $data['password'], // hashed by the User model cast
-                'role' => 'teacher',
-            ]);
+        Teacher::create([
+            'employee_number' => $data['employee_number'],
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'user_id' => $user->id,
+        ]);
+    });
 
-            Teacher::create([
-                'employee_number' => $data['employee_number'],
-                'first_name' => $data['first_name'],
-                'last_name' => $data['last_name'],
-                'user_id' => $user->id,
-            ]);
-        });
-
-        return back();
-    }
+    return back()->with('generated', [
+        'name' => "{$data['first_name']} {$data['last_name']}",
+        'email' => $data['email'],
+        'password' => $password,
+    ]);
+}
 
     // ---------- Schedules (admin creates, teachers edit their own) ----------
 

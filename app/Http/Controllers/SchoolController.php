@@ -12,6 +12,7 @@ use App\Models\Student;
 use App\Models\Subject;
 use App\Models\Teacher;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
@@ -50,18 +51,20 @@ class SchoolController extends Controller
         'gender' => 'nullable|in:Male,Female,Other',
         'section_id' => 'required|exists:sections,id',
         'email' => 'nullable|email|max:150|unique:users,email',
-        'password' => 'nullable|required_with:email|string|min:8',
     ]);
 
-    DB::transaction(function () use ($data) {
+    $password = ! empty($data['email']) ? Str::password(10, symbols: false) : null;
+
+    DB::transaction(function () use ($data, $password) {
         $userId = null;
 
-        if (! empty($data['email'])) {
+        if ($password) {
             $userId = User::create([
                 'name' => "{$data['first_name']} {$data['last_name']}",
                 'email' => $data['email'],
-                'password' => $data['password'], // hashed by the User cast
+                'password' => $password,
                 'role' => 'student',
+                'must_change_password' => true,
             ])->id;
         }
 
@@ -75,7 +78,13 @@ class SchoolController extends Controller
         ]);
     });
 
-    return back();
+    return $password
+        ? back()->with('generated', [
+            'name' => "{$data['first_name']} {$data['last_name']}",
+            'email' => $data['email'],
+            'password' => $password,
+        ])
+        : back();
 }
 
 public function createStudentLogin(Request $request, Student $student)
@@ -86,25 +95,31 @@ public function createStudentLogin(Request $request, Student $student)
 
     $v = Validator::make($request->all(), [
         'email' => 'required|email|max:150|unique:users,email',
-        'password' => 'required|string|min:8',
     ]);
 
     if ($v->fails()) {
         return back()->withErrors(['login' => $v->errors()->first()]);
     }
 
-    DB::transaction(function () use ($request, $student) {
+    $password = Str::password(10, symbols: false);
+
+    DB::transaction(function () use ($request, $student, $password) {
         $user = User::create([
             'name' => "{$student->first_name} {$student->last_name}",
             'email' => $request->email,
-            'password' => $request->password,
+            'password' => $password,
             'role' => 'student',
+            'must_change_password' => true,
         ]);
 
         $student->update(['user_id' => $user->id]);
     });
 
-    return back();
+    return back()->with('generated', [
+        'name' => "{$student->first_name} {$student->last_name}",
+        'email' => $request->email,
+        'password' => $password,
+    ]);
 }
 
 public function myAttendance(Request $request)
