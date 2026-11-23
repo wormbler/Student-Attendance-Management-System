@@ -11,6 +11,7 @@ defineProps<{
 const page = usePage();
 const errors = computed(() => (page.props as any).errors ?? {});
 const alertError = computed(() => errors.value.delete || errors.value.login);
+const isAdmin = computed(() => (page.props as any).auth?.user?.role === 'admin');
 
 const form = useForm({
     student_number: '',
@@ -19,7 +20,6 @@ const form = useForm({
     gender: 'Male',
     section_id: null as number | null,
     email: '',
-    password: '',
 });
 
 const add = () => form.post('/school/students', { onSuccess: () => form.reset() });
@@ -33,9 +33,7 @@ const remove = (id: number) => {
 const createLogin = (id: number) => {
     const email = prompt('Student login email:');
     if (!email) return;
-    const password = prompt('Password (min 8 characters):');
-    if (!password) return;
-    router.post(`/school/students/${id}/login`, { email, password }, { preserveScroll: true });
+    router.post(`/school/students/${id}/login`, { email }, { preserveScroll: true });
 };
 </script>
 
@@ -44,7 +42,7 @@ const createLogin = (id: number) => {
     <SchoolLayout>
         <h1 class="text-h5 mb-4">Students</h1>
 
-        <v-card v-if="$page.props.auth?.user?.role === 'admin'" class="mb-6">
+        <v-card v-if="isAdmin" class="mb-6">
             <v-card-title>Add student</v-card-title>
             <v-card-text>
                 <v-row>
@@ -70,11 +68,12 @@ const createLogin = (id: number) => {
                             :error-messages="form.errors.section_id"
                         />
                     </v-col>
-                    <v-col cols="12" md="4">
-                        <v-text-field v-model="form.email" label="Login email (optional)" :error-messages="form.errors.email" />
-                    </v-col>
-                    <v-col cols="12" md="4">
-                        <v-text-field v-model="form.password" type="password" label="Password (min 8)" :error-messages="form.errors.password" />
+                    <v-col cols="12" md="6">
+                        <v-text-field
+                            v-model="form.email"
+                            label="Login email (optional, a temporary password is generated)"
+                            :error-messages="form.errors.email"
+                        />
                     </v-col>
                     <v-col cols="12" md="2">
                         <v-btn color="primary" :loading="form.processing" @click="add">Add</v-btn>
@@ -108,7 +107,7 @@ const createLogin = (id: number) => {
                             <span v-else class="text-medium-emphasis">none</span>
                         </td>
                         <td class="text-right text-no-wrap">
-                            <template v-if="$page.props.auth?.user?.role === 'admin'">
+                            <template v-if="isAdmin">
                                 <v-btn v-if="!s.user_id" icon="mdi-key" size="small" variant="text" title="Create login" @click="createLogin(s.id)" />
                                 <v-btn icon="mdi-delete" size="small" variant="text" color="error" @click="remove(s.id)" />
                             </template>
