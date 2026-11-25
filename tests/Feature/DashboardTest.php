@@ -7,10 +7,16 @@ test('guests are redirected to the login page', function () {
     $response->assertRedirect(route('login'));
 });
 
-test('authenticated users can visit the dashboard', function () {
-    $user = User::factory()->create();
+test('authenticated users are sent to their area', function () {
+    $user = User::factory()->create(['role' => 'admin']);
     $this->actingAs($user);
 
-    $response = $this->get(route('dashboard'));
-    $response->assertOk();
+    $this->get(route('dashboard'))->assertRedirect('/school');
+});
+
+test('students are sent to their own page', function () {
+    $user = User::factory()->create(['role' => 'student']);
+    $this->actingAs($user);
+
+    $this->get(route('dashboard'))->assertRedirect('/my-attendance');
 });
