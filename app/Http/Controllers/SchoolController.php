@@ -378,7 +378,7 @@ $schedules = ClassSchedule::with(['subject', 'section'])
 {
     $user = $request->user();
 
-    $records = Attendance::with(['student', 'session.schedule.subject'])
+    $records = Attendance::with(['student', 'editor:id,name', 'session.schedule.subject'])
         ->when($user->role === 'teacher', fn ($q) => $q->whereHas(
             'session.schedule',
             fn ($s) => $s->where('teacher_id', $user->teacher?->id ?? 0)
@@ -389,6 +389,9 @@ $schedules = ClassSchedule::with(['subject', 'section'])
             'student' => "{$a->student->last_name}, {$a->student->first_name}",
             'subject' => $a->session->schedule->subject->subject_name,
             'status' => $a->status,
+            'edited' => (bool) $a->edited_at,
+            'edited_by' => $a->editor?->name,
+            'edited_at' => $a->edited_at?->format('Y-m-d H:i'),
         ]);
 
     return Inertia::render('school/Records', ['records' => $records]);

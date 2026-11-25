@@ -3,7 +3,10 @@ import { Head } from '@inertiajs/vue3';
 import SchoolLayout from '@/layouts/SchoolLayout.vue';
 
 defineProps<{
-    records: { id: number; date: string; student: string; subject: string; status: string }[];
+    records: {
+        id: number; date: string; student: string; subject: string; status: string;
+        edited: boolean; edited_by: string | null; edited_at: string | null;
+    }[];
 }>();
 
 const color = (status: string) =>
@@ -22,6 +25,7 @@ const color = (status: string) =>
                         <th>Student</th>
                         <th>Subject</th>
                         <th>Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -30,6 +34,19 @@ const color = (status: string) =>
                         <td>{{ r.student }}</td>
                         <td>{{ r.subject }}</td>
                         <td><v-chip :color="color(r.status)" size="small">{{ r.status }}</v-chip></td>
+                        <td>
+                            <v-tooltip v-if="r.edited" location="top">
+                                <template #activator="{ props }">
+                                    <v-chip v-bind="props" size="x-small" color="warning" variant="tonal" prepend-icon="mdi-pencil">
+                                        Edited
+                                    </v-chip>
+                                </template>
+                                Edited by {{ r.edited_by }} on {{ r.edited_at }}
+                            </v-tooltip>
+                        </td>
+                    </tr>
+                    <tr v-if="!records.length">
+                        <td colspan="5" class="text-center text-medium-emphasis pa-6">No attendance records yet.</td>
                     </tr>
                 </tbody>
             </v-table>
