@@ -34,14 +34,24 @@ class SchoolController extends Controller
         ]);
     }
 
-    public function students()
-    {
-        return Inertia::render('school/Students', [
-            'students' => Student::with('section:id,section_name')
-                ->orderBy('last_name')->orderBy('first_name')->get(),
-            'sections' => Section::orderBy('section_name')->get(['id', 'section_name']),
-        ]);
-    }
+    public function students(Request $request)
+{
+    $user = $request->user();
+    $isTeacher = $user->role === 'teacher';
+
+    $sectionIds = $isTeacher
+        ? ClassSchedule::where('teacher_id', $user->teacher?->id ?? 0)->pluck('section_id')->unique()
+        : collect();
+
+    return Inertia::render('school/Students', [
+        'students' => Student::with('section:id,section_name')
+            ->when($isTeacher, fn ($q) => $q->whereIn('section_id', $sectionIds))
+            ->orderBy('last_name')->orderBy('first_name')->get(),
+        'sections' => Section::orderBy('section_name')
+            ->when($isTeacher, fn ($q) => $q->whereIn('id', $sectionIds))
+            ->get(['id', 'section_name']),
+    ]);
+}
 
     public function storeStudent(Request $request)
 {
@@ -360,17 +370,23 @@ $schedules = ClassSchedule::with(['subject', 'section'])
     return Inertia::render('school/Audit', ['logs' => $logs]);
 }
 
-    public function records()
-    {
-        $records = Attendance::with(['student', 'session.schedule.subject'])
-            ->latest('id')->limit(200)->get()->map(fn ($a) => [
-                'id' => $a->id,
-                'date' => $a->session->session_date->toDateString(),
-                'student' => "{$a->student->last_name}, {$a->student->first_name}",
-                'subject' => $a->session->schedule->subject->subject_name,
-                'status' => $a->status,
-            ]);
+    public function records(Request $request)
+{
+    $user = $request->user();
 
-        return Inertia::render('school/Records', ['records' => $records]);
-    }
+    $records = Attendance::with(['student', 'session.schedule.subject'])
+        ->when($user->role === 'teacher', fn ($q) => $q->whereHas(
+            'session.schedule',
+            fn ($s) => $s->where('teacher_id', $user->teacher?->id ?? 0)
+        ))
+        ->latest('id')->limit(200)->get()->map(fn ($a) => [
+            'id' => $a->id,
+            'date' => $a->session->session_date->toDateString(),
+            'student' => "{$a->student->last_name}, {$a->student->first_name}",
+            'subject' => $a->session->schedule->subject->subject_name,
+            'status' => $a->status,
+        ]);
+
+    return Inertia::render('school/Records', ['records' => $records]);
+}
 }

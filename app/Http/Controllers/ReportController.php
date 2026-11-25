@@ -140,19 +140,31 @@ class ReportController extends Controller
     }
 
     public function index(Request $request)
-    {
-        return Inertia::render('school/Reports', [
-            'rows' => $this->reportRows($request),
-            'sections' => Section::orderBy('section_name')->get(['id', 'section_name']),
-            'subjects' => Subject::orderBy('subject_name')->get(['id', 'subject_name']),
-            'filters' => [
-                'section_id' => $request->filled('section_id') ? (int) $request->input('section_id') : null,
-                'subject_id' => $request->filled('subject_id') ? (int) $request->input('subject_id') : null,
-                'from' => $request->input('from'),
-                'to' => $request->input('to'),
-            ],
-        ]);
-    }
+{
+    $user = $request->user();
+    $teacherId = $user->teacher?->id ?? 0;
+    $isTeacher = $user->role === 'teacher';
+
+    return Inertia::render('school/Reports', [
+        'rows' => $this->reportRows($request),
+        'sections' => Section::orderBy('section_name')
+            ->when($isTeacher, fn ($q) => $q->whereIn(
+                'id', ClassSchedule::where('teacher_id', $teacherId)->select('section_id')
+            ))
+            ->get(['id', 'section_name']),
+        'subjects' => Subject::orderBy('subject_name')
+            ->when($isTeacher, fn ($q) => $q->whereIn(
+                'id', ClassSchedule::where('teacher_id', $teacherId)->select('subject_id')
+            ))
+            ->get(['id', 'subject_name']),
+        'filters' => [
+            'section_id' => $request->filled('section_id') ? (int) $request->input('section_id') : null,
+            'subject_id' => $request->filled('subject_id') ? (int) $request->input('subject_id') : null,
+            'from' => $request->input('from'),
+            'to' => $request->input('to'),
+        ],
+    ]);
+}
 
     public function export(Request $request)
     {
