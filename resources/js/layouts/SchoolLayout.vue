@@ -14,19 +14,25 @@ const items = computed(() => {
         ];
     }
 
+    const isAdmin = role.value === 'admin';
+
     return [
         { title: 'Dashboard', icon: 'mdi-view-dashboard', href: '/school' },
+        ...(isAdmin
+            ? [
+                  { title: 'Sections & Teachers', icon: 'mdi-cog', href: '/school/setup' },
+                  { title: 'Subjects', icon: 'mdi-book-open-variant', href: '/school/subjects' },
+              ]
+            : []),
         { title: 'Students', icon: 'mdi-account-school', href: '/school/students' },
         { title: 'Schedules', icon: 'mdi-calendar-clock', href: '/school/schedules' },
         { title: 'Take Attendance', icon: 'mdi-clipboard-check', href: '/school/attendance' },
         { title: 'Records', icon: 'mdi-table', href: '/school/records' },
         { title: 'Reports', icon: 'mdi-chart-box', href: '/school/reports' },
-        ...(role.value === 'admin'
+        ...(isAdmin
             ? [
-                  { title: 'Subjects', icon: 'mdi-book-open-variant', href: '/school/subjects' },
-                  { title: 'Sections & Teachers', icon: 'mdi-cog', href: '/school/setup' },
-                  { title: 'Users', icon: 'mdi-account-key', href: '/school/users' },
                   { title: 'Audit Log', icon: 'mdi-history', href: '/school/audit' },
+                  { title: 'Users', icon: 'mdi-account-key', href: '/school/users' },
               ]
             : []),
         { title: 'Change Password', icon: 'mdi-lock', href: '/change-password' },

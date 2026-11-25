@@ -216,6 +216,10 @@ $schedules = ClassSchedule::with(['subject', 'section'])
         if ($scheduleId) {
             $schedule = ClassSchedule::findOrFail($scheduleId);
 
+            if ($user->role === 'teacher' && $schedule->teacher_id !== $user->teacher?->id) {
+    abort(403);
+}
+
             $session = AttendanceSession::where('schedule_id', $schedule->id)
                 ->whereDate('session_date', $date)->first();
             $existing = $session

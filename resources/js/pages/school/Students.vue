@@ -2,6 +2,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import SchoolLayout from '@/layouts/SchoolLayout.vue';
+import { useRequiredFields } from '@/composables/useRequiredFields';
 
 defineProps<{
     students: any[];
@@ -21,7 +22,21 @@ const form = useForm({
     email: '',
 });
 
-const add = () => form.post('/school/students', { onSuccess: () => form.reset() });
+const req = useRequiredFields(form, {
+    first_name: 'First name',
+    last_name: 'Last name',
+    section_id: 'Section',
+});
+
+const add = () => {
+    if (!req.check()) return;
+    form.post('/school/students', {
+        onSuccess: () => {
+            form.reset();
+            req.reset();
+        },
+    });
+};
 
 const remove = (id: number) => {
     if (confirm('Delete this student?')) {
@@ -42,6 +57,7 @@ const createLogin = (id: number) => {
         <h1 class="text-h5 mb-4">Students</h1>
 
         <v-card v-if="isAdmin" class="mb-6">
+            <v-alert v-if="req.message.value" type="warning" class="mb-4" :text="req.message.value" />
             <v-card-title>Add student</v-card-title>
             <v-card-text>
                 <v-row>

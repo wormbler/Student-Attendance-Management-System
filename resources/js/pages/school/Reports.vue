@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import { reactive } from 'vue';
+import { reactive, watch } from 'vue';
 import SchoolLayout from '@/layouts/SchoolLayout.vue';
 
 const props = defineProps<{
@@ -37,14 +37,16 @@ const params = () => {
     return p;
 };
 
-const apply = () => router.get('/school/reports', params(), { preserveState: true });
+const apply = () => router.get('/school/reports', params(), { preserveState: true, preserveScroll: true });
+
+// Filters apply automatically whenever one changes
+watch(f, apply, { deep: true });
 
 const reset = () => {
     f.section_id = null;
     f.subject_id = null;
     f.from = null;
     f.to = null;
-    apply();
 };
 
 const exportCsv = () => {

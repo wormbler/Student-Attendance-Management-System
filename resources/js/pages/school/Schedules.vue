@@ -2,6 +2,7 @@
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import SchoolLayout from '@/layouts/SchoolLayout.vue';
+import { useRequiredFields } from '@/composables/useRequiredFields';
 
 type Schedule = {
     id: number; section: string; subject: string; teacher: string;
@@ -31,12 +32,34 @@ const form = useForm({
     end_time: '09:00',
     room: '',
 });
-const add = () => form.post('/school/schedules', { preserveScroll: true });
+
+const req = useRequiredFields(form, {
+    subject_id: 'Subject',
+    teacher_id: 'Teacher',
+    section_id: 'Section',
+    day: 'Day',
+    start_time: 'Start time',
+    end_time: 'End time',
+});
+
+const add = () => {
+    if (!req.check()) return;
+    form.post('/school/schedules', {
+        preserveScroll: true,
+        onSuccess: () => req.reset(),
+    });
+};
 
 // Admin and teacher: edit day, time, room
 const dialog = ref(false);
 const editingId = ref<number | null>(null);
 const editForm = useForm({ day: 'Monday', start_time: '08:00', end_time: '09:00', room: '' });
+
+const editReq = useRequiredFields(editForm, {
+    day: 'Day',
+    start_time: 'Start time',
+    end_time: 'End time',
+});
 
 const edit = (s: Schedule) => {
     editingId.value = s.id;
@@ -45,14 +68,20 @@ const edit = (s: Schedule) => {
     editForm.end_time = s.end_time;
     editForm.room = s.room ?? '';
     editForm.clearErrors();
+    editReq.reset();
     dialog.value = true;
 };
 
-const saveEdit = () =>
+const saveEdit = () => {
+    if (!editReq.check()) return;
     editForm.put(`/school/schedules/${editingId.value}`, {
         preserveScroll: true,
-        onSuccess: () => (dialog.value = false),
+        onSuccess: () => {
+            dialog.value = false;
+            editReq.reset();
+        },
     });
+};
 
 const remove = (id: number) => {
     if (confirm('Delete this schedule?')) {
@@ -69,27 +98,28 @@ const remove = (id: number) => {
         <v-card v-if="isAdmin" class="mb-6">
             <v-card-title>Add schedule</v-card-title>
             <v-card-text>
+                <v-alert v-if="req.message.value" type="warning" density="compact" class="mb-3" :text="req.message.value" />
                 <v-row>
                     <v-col cols="12" md="4">
-                        <v-select v-model="form.subject_id" :items="subjects" item-title="subject_name" item-value="id" label="Subject" :error-messages="form.errors.subject_id" />
+                        <v-select v-model="form.subject_id" :items="subjects" item-title="subject_name" item-value="id" label="Subject" :error-messages="req.err('subject_id')" />
                     </v-col>
                     <v-col cols="12" md="4">
-                        <v-select v-model="form.teacher_id" :items="teachers" item-title="name" item-value="id" label="Teacher" :error-messages="form.errors.teacher_id" />
+                        <v-select v-model="form.teacher_id" :items="teachers" item-title="name" item-value="id" label="Teacher" :error-messages="req.err('teacher_id')" />
                     </v-col>
                     <v-col cols="12" md="4">
-                        <v-select v-model="form.section_id" :items="sections" item-title="section_name" item-value="id" label="Section" :error-messages="form.errors.section_id" />
+                        <v-select v-model="form.section_id" :items="sections" item-title="section_name" item-value="id" label="Section" :error-messages="req.err('section_id')" />
                     </v-col>
                     <v-col cols="12" md="3">
-                        <v-select v-model="form.day" :items="days" label="Day" />
+                        <v-select v-model="form.day" :items="days" label="Day" :error-messages="req.err('day')" />
                     </v-col>
                     <v-col cols="6" md="2">
-                        <v-text-field v-model="form.start_time" type="time" label="Start" :error-messages="form.errors.start_time" />
+                        <v-text-field v-model="form.start_time" type="time" label="Start" :error-messages="req.err('start_time')" />
                     </v-col>
                     <v-col cols="6" md="2">
-                        <v-text-field v-model="form.end_time" type="time" label="End" :error-messages="form.errors.end_time" />
+                        <v-text-field v-model="form.end_time" type="time" label="End" :error-messages="req.err('end_time')" />
                     </v-col>
                     <v-col cols="12" md="3">
-                        <v-text-field v-model="form.room" label="Room" />
+                        <v-text-field v-model="form.room" label="Room (optional)" />
                     </v-col>
                     <v-col cols="12" md="2">
                         <v-btn color="primary" :loading="form.processing" @click="add">Add</v-btn>
@@ -130,16 +160,17 @@ const remove = (id: number) => {
         <v-dialog v-model="dialog" max-width="480">
             <v-card title="Edit schedule">
                 <v-card-text>
-                    <v-select v-model="editForm.day" :items="days" label="Day" />
+                    <v-alert v-if="editReq.message.value" type="warning" density="compact" class="mb-3" :text="editReq.message.value" />
+                    <v-select v-model="editForm.day" :items="days" label="Day" :error-messages="editReq.err('day')" />
                     <v-row>
                         <v-col cols="6">
-                            <v-text-field v-model="editForm.start_time" type="time" label="Start" :error-messages="editForm.errors.start_time" />
+                            <v-text-field v-model="editForm.start_time" type="time" label="Start" :error-messages="editReq.err('start_time')" />
                         </v-col>
                         <v-col cols="6">
-                            <v-text-field v-model="editForm.end_time" type="time" label="End" :error-messages="editForm.errors.end_time" />
+                            <v-text-field v-model="editForm.end_time" type="time" label="End" :error-messages="editReq.err('end_time')" />
                         </v-col>
                     </v-row>
-                    <v-text-field v-model="editForm.room" label="Room" />
+                    <v-text-field v-model="editForm.room" label="Room (optional)" />
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer />
